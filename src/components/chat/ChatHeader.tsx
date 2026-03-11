@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { useChatStore } from "@/store/chatStore"
@@ -6,6 +7,10 @@ import type { Conversation, User } from "@/types/chat"
 const currentUserId = "user-1"
 
 const getConversationTitle = (conversation: Conversation, users: User[]) => {
+  if (conversation.name) {
+    return conversation.name
+  }
+
   const others = conversation.participants
     .filter((id) => id !== currentUserId)
     .map((id) => users.find((user) => user.id === id))
@@ -23,6 +28,15 @@ const getConversationTitle = (conversation: Conversation, users: User[]) => {
 }
 
 const getConversationAvatar = (conversation: Conversation, users: User[]) => {
+  if (conversation.name) {
+    return conversation.name
+      .split(" ")
+      .map((part) => part[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase()
+  }
+
   const other = conversation.participants.find((id) => id !== currentUserId)
   const user = users.find((item) => item.id === other)
   return user?.avatar ?? "?"
@@ -36,10 +50,22 @@ const getOnlineStatus = (conversation: Conversation, users: User[]) => {
 
 interface ChatHeaderProps {
   onBack?: () => void
+  searchValue?: string
+  isSearchOpen?: boolean
+  onSearchToggle?: () => void
+  onSearchChange?: (value: string) => void
 }
 
-export default function ChatHeader({ onBack }: ChatHeaderProps) {
-  const { conversations, users, activeConversationId } = useChatStore()
+export default function ChatHeader({
+  onBack,
+  searchValue = "",
+  isSearchOpen = false,
+  onSearchToggle,
+  onSearchChange,
+}: ChatHeaderProps) {
+  const { conversations, users, activeConversationId, mutedConversationIds, toggleMuteConversation } =
+    useChatStore()
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
   const activeConversation = conversations.find(
     (conversation) => conversation.id === activeConversationId,
   )
@@ -58,9 +84,14 @@ export default function ChatHeader({ onBack }: ChatHeaderProps) {
   const title = getConversationTitle(activeConversation, users)
   const avatar = getConversationAvatar(activeConversation, users)
   const online = getOnlineStatus(activeConversation, users)
+  const isMuted = Boolean(mutedConversationIds[activeConversation.id])
+  const participants = activeConversation.participants
+    .filter((id) => id !== currentUserId)
+    .map((id) => users.find((user) => user.id === id))
+    .filter((user): user is User => Boolean(user))
 
   return (
-    <header className="flex items-center justify-between border-b border-border px-6 py-4">
+    <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4">
       <div className="flex items-center gap-3">
         {onBack ? (
           <button
@@ -71,9 +102,17 @@ export default function ChatHeader({ onBack }: ChatHeaderProps) {
             Back
           </button>
         ) : null}
-        <Avatar className="h-10 w-10">
-          <AvatarFallback>{avatar}</AvatarFallback>
-        </Avatar>
+        <div className="relative">
+          <Avatar className="h-10 w-10">
+            <AvatarFallback>{avatar}</AvatarFallback>
+          </Avatar>
+          <span
+            className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card ${
+              online ? "bg-emerald-500" : "bg-muted"
+            }`}
+            aria-hidden="true"
+          />
+        </div>
         <div>
           <p className="text-sm font-semibold">{title}</p>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -83,17 +122,90 @@ export default function ChatHeader({ onBack }: ChatHeaderProps) {
               {online ? "Online" : "Offline"}
             </Badge>
             <span>{online ? "Active now" : "Last seen recently"}</span>
+            {isMuted ? <span className="text-[11px]">Muted</span> : null}
           </div>
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <button className="rounded-full border border-border px-3 py-1 text-xs font-medium">
-          Call
+        {isSearchOpen ? (
+          <input
+            value={searchValue}
+            onChange={(event) => onSearchChange?.(event.target.value)}
+            placeholder="Search messages"
+            className="h-9 w-48 rounded-full border border-border bg-background px-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring sm:w-56"
+          />
+        ) : null}
+        <button
+          type="button"
+          onClick={onSearchToggle}
+          className="flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs font-medium"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="M20 20l-3.5-3.5" />
+          </svg>
+          <span className="hidden sm:inline">Search</span>
         </button>
-        <button className="rounded-full border border-border px-3 py-1 text-xs font-medium">
-          Info
+        <button
+          type="button"
+          onClick={() => setIsProfileOpen(true)}
+          className="rounded-full border border-border px-3 py-1 text-xs font-medium"
+        >
+          View Profile
+        </button>
+        <button
+          type="button"
+          onClick={() => toggleMuteConversation(activeConversation.id)}
+          className="rounded-full border border-border px-3 py-1 text-xs font-medium"
+        >
+          {isMuted ? "Unmute" : "Mute"}
         </button>
       </div>
+      {isProfileOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-4 shadow-lg">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold">Profile</h3>
+              <button
+                type="button"
+                onClick={() => setIsProfileOpen(false)}
+                className="rounded-full border border-border px-2 py-1 text-xs font-medium"
+              >
+                Close
+              </button>
+            </div>
+            <div className="mt-4 space-y-3">
+              {participants.length ? (
+                participants.map((user) => (
+                  <div key={user.id} className="flex items-center gap-3 rounded-xl border border-border p-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarFallback>{user.avatar}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold">{user.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {user.online ? "Online" : "Offline"}
+                      </p>
+                    </div>
+                    {user.online ? (
+                      <Badge className="bg-emerald-500 text-white">Online</Badge>
+                    ) : null}
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No participants.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </header>
   )
 }

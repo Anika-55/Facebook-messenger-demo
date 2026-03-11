@@ -14,15 +14,19 @@ const minutesAgo = (minutes: number) =>
   new Date(now.getTime() - minutes * 60_000).toISOString()
 
 const makeMessage = (
-  values: Omit<Message, "id" | "status" | "reactions"> & {
+  values: Omit<Message, "id" | "status" | "reactions" | "type" | "imageUrl"> & {
     status?: Message["status"]
     reactions?: Message["reactions"]
+    type?: Message["type"]
+    imageUrl?: Message["imageUrl"]
   },
   id: number,
 ): Message => ({
   id: `msg-${id}`,
+  type: values.type ?? "text",
   status: values.status ?? "seen",
   reactions: values.reactions ?? {},
+  imageUrl: values.imageUrl,
   ...values,
 })
 

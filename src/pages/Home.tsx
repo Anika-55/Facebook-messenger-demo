@@ -110,7 +110,11 @@ export default function Home() {
       id: `msg-${Date.now()}`,
       senderId: currentUserId,
       text: trimmed,
+      type: "text",
+      imageUrl: undefined,
       timestamp: new Date().toISOString(),
+      status: "sent",
+      reactions: {},
     }
 
     setConversations((prev) =>

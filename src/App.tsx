@@ -1,7 +1,7 @@
-import Home from "@/pages/Home"
+import MessengerPage from "@/pages/MessengerPage"
 
 function App() {
-  return <Home />
+  return <MessengerPage />
 }
 
 export default App

@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -6,7 +7,19 @@ import type { Conversation, User } from "@/types/chat"
 
 const currentUserId = "user-1"
 
+const getInitials = (value: string) =>
+  value
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase()
+
 const getConversationTitle = (conversation: Conversation, users: User[]) => {
+  if (conversation.name) {
+    return conversation.name
+  }
+
   const others = conversation.participants
     .filter((id) => id !== currentUserId)
     .map((id) => users.find((user) => user.id === id))
@@ -24,6 +37,10 @@ const getConversationTitle = (conversation: Conversation, users: User[]) => {
 }
 
 const getConversationAvatar = (conversation: Conversation, users: User[]) => {
+  if (conversation.name) {
+    return getInitials(conversation.name)
+  }
+
   const other = conversation.participants.find((id) => id !== currentUserId)
   const user = users.find((item) => item.id === other)
   return user?.avatar ?? "?"
@@ -45,7 +62,19 @@ interface ConversationListProps {
 }
 
 export default function ConversationList({ onSelect }: ConversationListProps) {
-  const { conversations, users, activeConversationId, setActiveConversation } = useChatStore()
+  const {
+    conversations,
+    users,
+    activeConversationId,
+    setActiveConversation,
+    startConversation,
+    startGroupConversation,
+  } = useChatStore()
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false)
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
+  const [groupName, setGroupName] = useState("")
+  const availableUsers = users.filter((user) => user.id !== currentUserId)
 
   return (
     <div className="flex h-full flex-col">
@@ -55,6 +84,22 @@ export default function ConversationList({ onSelect }: ConversationListProps) {
           <span className="rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">
             {conversations.length} chats
           </span>
+        </div>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(true)}
+            className="w-full rounded-full bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
+          >
+            + New Message
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsGroupModalOpen(true)}
+            className="w-full rounded-full border border-border px-3 py-2 text-xs font-semibold"
+          >
+            Create Group
+          </button>
         </div>
       </div>
       <ScrollArea className="flex-1 px-3 py-3">
@@ -79,9 +124,21 @@ export default function ConversationList({ onSelect }: ConversationListProps) {
                     : "border-transparent hover:border-border hover:bg-muted/50"
                 }`}
               >
-                <Avatar className="h-11 w-11">
-                  <AvatarFallback>{avatar}</AvatarFallback>
-                </Avatar>
+                <div className="relative">
+                  <Avatar className="h-11 w-11">
+                    <AvatarFallback>{avatar}</AvatarFallback>
+                  </Avatar>
+                  <span
+                    className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card ${
+                      conversation.participants
+                        .filter((id) => id !== currentUserId)
+                        .some((id) => users.find((user) => user.id === id)?.online)
+                        ? "bg-emerald-500"
+                        : "bg-muted"
+                    }`}
+                    aria-hidden="true"
+                  />
+                </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <p className="truncate text-sm font-semibold">{title}</p>
@@ -101,6 +158,137 @@ export default function ConversationList({ onSelect }: ConversationListProps) {
           })}
         </div>
       </ScrollArea>
+
+      {isModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-4 shadow-lg">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold">Start a new chat</h3>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="rounded-full border border-border px-2 py-1 text-xs font-medium"
+              >
+                Close
+              </button>
+            </div>
+            <div className="mt-4 space-y-2">
+              {availableUsers.map((user) => (
+                <button
+                  key={user.id}
+                  type="button"
+                  onClick={() => {
+                    startConversation(user.id)
+                    setIsModalOpen(false)
+                    onSelect?.()
+                  }}
+                  className="flex w-full items-center gap-3 rounded-xl border border-border px-3 py-2 text-left hover:bg-muted/50"
+                >
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback>{user.avatar}</AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold">{user.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {user.online ? "Online" : "Offline"}
+                    </p>
+                  </div>
+                  {user.online ? (
+                    <Badge className="bg-emerald-500 text-white">Online</Badge>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isGroupModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-4 shadow-lg">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold">Create group chat</h3>
+              <button
+                type="button"
+                onClick={() => setIsGroupModalOpen(false)}
+                className="rounded-full border border-border px-2 py-1 text-xs font-medium"
+              >
+                Close
+              </button>
+            </div>
+            <div className="mt-4 space-y-2">
+              <input
+                value={groupName}
+                onChange={(event) => setGroupName(event.target.value)}
+                placeholder="Group name"
+                className="h-9 w-full rounded-full border border-border bg-background px-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+                {availableUsers.map((user) => {
+                  const isSelected = selectedUserIds.includes(user.id)
+                  return (
+                    <button
+                      key={user.id}
+                      type="button"
+                      onClick={() =>
+                        setSelectedUserIds((prev) =>
+                          prev.includes(user.id)
+                            ? prev.filter((id) => id !== user.id)
+                            : [...prev, user.id],
+                        )
+                      }
+                      className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left ${
+                        isSelected
+                          ? "border-primary/40 bg-primary/10"
+                          : "border-border hover:bg-muted/50"
+                      }`}
+                    >
+                      <Avatar className="h-10 w-10">
+                        <AvatarFallback>{user.avatar}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold">{user.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {user.online ? "Online" : "Offline"}
+                        </p>
+                      </div>
+                      {isSelected ? (
+                        <Badge className="bg-primary text-primary-foreground">Added</Badge>
+                      ) : null}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+            <div className="mt-4 flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                Select at least 2 people.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  if (selectedUserIds.length < 2) {
+                    return
+                  }
+                  startGroupConversation(selectedUserIds, groupName)
+                  setSelectedUserIds([])
+                  setGroupName("")
+                  setIsGroupModalOpen(false)
+                  onSelect?.()
+                }}
+                className={`rounded-full px-4 py-2 text-xs font-semibold text-primary-foreground ${
+                  selectedUserIds.length < 2
+                    ? "cursor-not-allowed bg-primary/50"
+                    : "bg-primary"
+                }`}
+                disabled={selectedUserIds.length < 2}
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
