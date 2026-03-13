@@ -2,6 +2,8 @@
 
 A polished, responsive Facebook Messenger style UI built with React, TypeScript, and Vite. The app ships with seeded conversations, message reactions, search, and rich composition tools to showcase modern chat UI interactions.
 
+Live-Link: https://facebook-messenger-demo.vercel.app
+
 **Features**
 - Inbox with conversation list, unread badges, and online status indicators
 - Light and dark theme toggle
