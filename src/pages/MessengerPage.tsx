@@ -34,10 +34,10 @@ export default function MessengerPage() {
   }, [activeConversationId, conversations, receiveMessage])
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex min-h-screen max-w-6xl flex-col gap-4 px-4 py-6 sm:px-6 lg:px-8 md:flex-row">
+    <div className="h-screen overflow-hidden bg-background text-foreground">
+      <div className="flex h-full overflow-hidden">
         <aside
-          className={`w-full shrink-0 overflow-hidden rounded-3xl border border-border bg-card md:w-64 lg:w-80 ${
+          className={`h-full w-[320px] shrink-0 border-r border-border ${
             showChatOnMobile ? "hidden md:block" : "block"
           }`}
         >
@@ -45,7 +45,7 @@ export default function MessengerPage() {
         </aside>
 
         <main
-          className={`flex min-h-[60vh] flex-1 flex-col overflow-hidden rounded-3xl border border-border bg-card ${
+          className={`flex h-full flex-1 flex-col overflow-hidden ${
             showChatOnMobile ? "flex" : "hidden md:flex"
           }`}
         >

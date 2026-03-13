@@ -1,73 +1,56 @@
-# React + TypeScript + Vite
+# Messenger UI Clone
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A polished, responsive Facebook Messenger style UI built with React, TypeScript, and Vite. The app ships with seeded conversations, message reactions, search, and rich composition tools to showcase modern chat UI interactions.
 
-Currently, two official plugins are available:
+**Features**
+- Inbox with conversation list, unread badges, and online status indicators
+- Light and dark theme toggle
+- Start new 1:1 conversations or create group chats
+- Chat window with message search and highlighted results
+- Typing indicator plus simulated incoming messages
+- Compose messages with emoji picker and image upload previews
+- Message status labels (sent, delivered, seen)
+- Edit sent messages and add emoji reactions
+- Mute conversations and view participant profiles
+- Responsive layout with mobile back navigation
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+**Tech Stack**
+- React 19 + TypeScript
+- Vite 7
+- Tailwind CSS v4
+- Zustand state management
+- `next-themes`, `emoji-picker-react`, shadcn/ui components
 
-## React Compiler
+**Getting Started**
+```bash
+cd client
+npm install
+npm run dev
+```
+Open the dev server URL shown in the terminal.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+**Scripts**
+```bash
+npm run dev      # Start dev server
+npm run build    # Typecheck + production build
+npm run preview  # Preview production build
+npm run lint     # Lint the codebase
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+**Project Structure**
+- `client/src/pages/MessengerPage.tsx` - Layout and mobile behavior
+- `client/src/components/chat` - Chat header, message list, bubbles, input
+- `client/src/components/conversation` - Inbox and new chat flows
+- `client/src/store/chatStore.ts` - Zustand store and chat actions
+- `client/src/data/mockData.ts` - Seeded users, conversations, messages
+- `client/src/index.css` - Global styles and Tailwind setup
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+**State + Data Notes**
+- All data is local and sourced from `client/src/data/mockData.ts`.
+- Incoming messages are simulated every 12 seconds.
+- Outgoing messages update from `sent` to `delivered` after 2 seconds.
+- There is no backend or persistence layer yet.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+**Customization**
+- Edit `client/src/data/mockData.ts` to change the seeded conversations.
+- Adjust styles in `client/src/index.css` or Tailwind config (`client/tailwind.config.ts`).

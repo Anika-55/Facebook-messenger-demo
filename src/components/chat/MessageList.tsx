@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import MessageBubble from "@/components/chat/MessageBubble"
 import { useChatStore } from "@/store/chatStore"
 
@@ -69,35 +68,33 @@ export default function MessageList({ searchQuery = "" }: MessageListProps) {
   }, [activeConversation?.messages.length])
 
   return (
-    <ScrollArea className="flex-1 px-6 py-6">
-      <div className="flex min-h-full flex-col justify-end gap-4">
-        {activeConversation?.messages.map((message) => {
-          const isMatch = matchedMessageIds.includes(message.id)
+    <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      {activeConversation?.messages.map((message) => {
+        const isMatch = matchedMessageIds.includes(message.id)
 
-          return (
-            <div
-              key={message.id}
-              ref={(node) => {
-                messageRefs.current[message.id] = node
-              }}
-            >
-              <MessageBubble
-                message={message}
-                isSent={message.senderId === currentUserId}
-                highlightQuery={normalizedQuery}
-                isHighlighted={isMatch}
-              />
-            </div>
-          )
-        })}
-        {isTyping ? (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
-            <span>User is typing...</span>
+        return (
+          <div
+            key={message.id}
+            ref={(node) => {
+              messageRefs.current[message.id] = node
+            }}
+          >
+            <MessageBubble
+              message={message}
+              isSent={message.senderId === currentUserId}
+              highlightQuery={normalizedQuery}
+              isHighlighted={isMatch}
+            />
           </div>
-        ) : null}
-        <div ref={bottomRef} />
-      </div>
-    </ScrollArea>
+        )
+      })}
+      {isTyping ? (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
+          <span>User is typing...</span>
+        </div>
+      ) : null}
+      <div ref={bottomRef} />
+    </div>
   )
 }

@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent } from "react"
+import { useTheme } from "next-themes"
 import { conversations as seedConversations, currentUserId, users } from "@/data/chat"
 import type { Conversation, Message, User } from "@/types/chat"
 
@@ -54,11 +55,12 @@ const getConversationAvatar = (conversation: Conversation) => {
 }
 
 export default function Home() {
+  const { resolvedTheme, setTheme } = useTheme()
   const [conversations, setConversations] = useState<Conversation[]>(seedConversations)
   const [activeId, setActiveId] = useState(seedConversations[0]?.id ?? "")
   const [draft, setDraft] = useState("")
   const [search, setSearch] = useState("")
-  const [showList, setShowList] = useState(true)
+  const [showList, setShowList] = useState(false)
 
   const filteredConversations = useMemo(() => {
     if (!search.trim()) {
@@ -130,6 +132,11 @@ export default function Home() {
     setDraft("")
   }
 
+  const handleToggleTheme = () => {
+    const nextTheme = resolvedTheme === "dark" ? "light" : "dark"
+    setTheme(nextTheme)
+  }
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex min-h-screen max-w-6xl flex-col px-4 py-6 sm:px-6 lg:px-8">
@@ -143,6 +150,51 @@ export default function Home() {
             </h1>
           </div>
           <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleToggleTheme}
+              className="flex items-center gap-2 rounded-full border border-border px-3 py-2 text-sm font-medium"
+              aria-label="Toggle dark mode"
+            >
+              {resolvedTheme === "dark" ? (
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="12" r="5" />
+                  <line x1="12" y1="1" x2="12" y2="3" />
+                  <line x1="12" y1="21" x2="12" y2="23" />
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                  <line x1="1" y1="12" x2="3" y2="12" />
+                  <line x1="21" y1="12" x2="23" y2="12" />
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                </svg>
+              ) : (
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z" />
+                </svg>
+              )}
+              <span className="text-xs font-semibold">
+                {resolvedTheme === "dark" ? "Light" : "Dark"}
+              </span>
+            </button>
             <button className="rounded-full border border-border px-4 py-2 text-sm font-medium">
               New message
             </button>
@@ -152,18 +204,37 @@ export default function Home() {
           </div>
         </div>
 
-        <section className="flex min-h-[72vh] flex-1 flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-sm md:grid md:grid-cols-[320px_minmax(0,1fr)]">
+        <section className="relative flex min-h-[72vh] flex-1 flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-sm md:grid md:grid-cols-[320px_minmax(0,1fr)]">
+          {showList ? (
+            <button
+              type="button"
+              onClick={() => setShowList(false)}
+              aria-label="Close sidebar"
+              className="fixed inset-0 z-20 bg-foreground/40 md:hidden"
+            />
+          ) : null}
           <aside
-            className={`flex flex-col border-border md:border-r ${
-              showList ? "flex" : "hidden md:flex"
+            className={`z-30 flex flex-col border-border bg-card md:border-r ${
+              showList
+                ? "fixed inset-y-0 left-0 w-[280px] shadow-xl md:static md:w-auto md:shadow-none"
+                : "hidden md:flex"
             }`}
           >
             <div className="border-b border-border p-5">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold">Inbox</h2>
-                <span className="rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">
-                  {conversations.length} chats
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">
+                    {conversations.length} chats
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowList(false)}
+                    className="rounded-full border border-border px-2.5 py-1 text-[11px] font-medium md:hidden"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
               <div className="mt-4">
                 <input
@@ -230,9 +301,23 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => setShowList(true)}
-                  className="rounded-full border border-border px-3 py-1 text-xs font-medium md:hidden"
+                  className="rounded-full border border-border p-2 md:hidden"
+                  aria-label="Open sidebar"
                 >
-                  Back
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <line x1="3" y1="6" x2="21" y2="6" />
+                    <line x1="3" y1="12" x2="21" y2="12" />
+                    <line x1="3" y1="18" x2="21" y2="18" />
+                  </svg>
                 </button>
                 <div className="space-y-1">
                   <p className="text-sm font-semibold">{activeTitle}</p>

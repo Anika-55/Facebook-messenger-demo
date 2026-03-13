@@ -47,7 +47,7 @@ export default function MessageInput() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="border-t border-border px-6 py-4">
+    <form onSubmit={handleSubmit} className="border-t border-border p-4">
       {imagePreview ? (
         <div className="mb-3 flex items-center gap-3 rounded-2xl border border-border bg-background p-3">
           <img

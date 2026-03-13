@@ -12,7 +12,7 @@ export default function ChatWindow({ onBack }: ChatWindowProps) {
   const [searchQuery, setSearchQuery] = useState("")
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-1 flex-col">
       <ChatHeader
         onBack={onBack}
         isSearchOpen={isSearchOpen}

@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useTheme } from "next-themes"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { useChatStore } from "@/store/chatStore"
@@ -63,6 +64,7 @@ export default function ChatHeader({
   onSearchToggle,
   onSearchChange,
 }: ChatHeaderProps) {
+  const { resolvedTheme, theme, setTheme } = useTheme()
   const { conversations, users, activeConversationId, mutedConversationIds, toggleMuteConversation } =
     useChatStore()
   const [isProfileOpen, setIsProfileOpen] = useState(false)
@@ -70,13 +72,63 @@ export default function ChatHeader({
     (conversation) => conversation.id === activeConversationId,
   )
 
+  const effectiveTheme = resolvedTheme ?? theme ?? "light"
+  const isDark = effectiveTheme === "dark"
+
+  const handleToggleTheme = () => {
+    setTheme(isDark ? "light" : "dark")
+  }
+
   if (!activeConversation) {
     return (
-      <div className="flex items-center justify-between border-b border-border px-6 py-4">
+      <div className="flex items-center justify-between border-b border-border p-4">
         <div>
           <p className="text-sm font-semibold">Select a conversation</p>
           <p className="text-xs text-muted-foreground">Pick a chat to get started</p>
         </div>
+        <button
+          type="button"
+          onClick={handleToggleTheme}
+          className="flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs font-medium"
+          aria-label="Toggle dark mode"
+        >
+          {isDark ? (
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="5" />
+              <line x1="12" y1="1" x2="12" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+              <line x1="1" y1="12" x2="3" y2="12" />
+              <line x1="21" y1="12" x2="23" y2="12" />
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </svg>
+          ) : (
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z" />
+            </svg>
+          )}
+          <span className="hidden sm:inline">{isDark ? "Light" : "Dark"}</span>
+        </button>
       </div>
     )
   }
@@ -91,7 +143,7 @@ export default function ChatHeader({
     .filter((user): user is User => Boolean(user))
 
   return (
-    <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4">
+    <header className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-3">
         {onBack ? (
           <button
@@ -113,7 +165,7 @@ export default function ChatHeader({
             aria-hidden="true"
           />
         </div>
-        <div>
+        <div className="min-w-0">
           <p className="text-sm font-semibold">{title}</p>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Badge
@@ -126,7 +178,50 @@ export default function ChatHeader({
           </div>
         </div>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+        <button
+          type="button"
+          onClick={handleToggleTheme}
+          className="flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs font-medium"
+          aria-label="Toggle dark mode"
+        >
+          {isDark ? (
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="5" />
+              <line x1="12" y1="1" x2="12" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+              <line x1="1" y1="12" x2="3" y2="12" />
+              <line x1="21" y1="12" x2="23" y2="12" />
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </svg>
+          ) : (
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z" />
+            </svg>
+          )}
+          <span className="hidden sm:inline">{isDark ? "Light" : "Dark"}</span>
+        </button>
         {isSearchOpen ? (
           <input
             value={searchValue}
@@ -158,14 +253,16 @@ export default function ChatHeader({
           onClick={() => setIsProfileOpen(true)}
           className="rounded-full border border-border px-3 py-1 text-xs font-medium"
         >
-          View Profile
+          <span className="hidden sm:inline">View Profile</span>
+          <span className="sm:hidden">Profile</span>
         </button>
         <button
           type="button"
           onClick={() => toggleMuteConversation(activeConversation.id)}
           className="rounded-full border border-border px-3 py-1 text-xs font-medium"
         >
-          {isMuted ? "Unmute" : "Mute"}
+          <span className="hidden sm:inline">{isMuted ? "Unmute" : "Mute"}</span>
+          <span className="sm:hidden">{isMuted ? "On" : "Mute"}</span>
         </button>
       </div>
       {isProfileOpen ? (
