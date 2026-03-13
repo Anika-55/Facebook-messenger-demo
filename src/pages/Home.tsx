@@ -7,14 +7,6 @@ const avatarPalette = ["#2563EB", "#9333EA", "#F97316", "#0F766E", "#16A34A", "#
 
 const getUserById = (id: string) => users.find((user) => user.id === id)
 
-const getInitials = (name: string) =>
-  name
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase()
-
 const formatTime = (value: string) =>
   new Date(value).toLocaleTimeString(undefined, {
     hour: "2-digit",
