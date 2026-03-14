@@ -10,6 +10,8 @@ export default function MessageInput() {
   const [isEmojiOpen, setIsEmojiOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const sendMessage = useChatStore((state) => state.sendMessage)
+  const replyTarget = useChatStore((state) => state.replyTarget)
+  const setReplyTarget = useChatStore((state) => state.setReplyTarget)
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -48,6 +50,25 @@ export default function MessageInput() {
 
   return (
     <form onSubmit={handleSubmit} className="border-t border-border p-4">
+      {replyTarget ? (
+        <div className="mb-3 flex items-center justify-between rounded-2xl border border-border bg-background px-3 py-2 text-xs">
+          <div className="min-w-0">
+            <p className="font-semibold">Replying to</p>
+            <p className="truncate text-muted-foreground">
+              {replyTarget.deletedAt
+                ? "Message deleted"
+                : replyTarget.text || (replyTarget.imageUrl ? "Photo" : "")}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setReplyTarget(null)}
+            className="rounded-full border border-border px-2 py-1 text-[11px] font-semibold"
+          >
+            Cancel
+          </button>
+        </div>
+      ) : null}
       {imagePreview ? (
         <div className="mb-3 flex items-center gap-3 rounded-2xl border border-border bg-background p-3">
           <img

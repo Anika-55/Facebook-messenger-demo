@@ -62,13 +62,42 @@ export default function MessageBubble({
 }: MessageBubbleProps) {
   const addReaction = useChatStore((state) => state.addReaction)
   const editMessage = useChatStore((state) => state.editMessage)
+  const deleteMessage = useChatStore((state) => state.deleteMessage)
+  const setReplyTarget = useChatStore((state) => state.setReplyTarget)
+  const forwardMessage = useChatStore((state) => state.forwardMessage)
+  const { conversations, activeConversationId, users, currentUserId } = useChatStore()
   const [showReactions, setShowReactions] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [draft, setDraft] = useState(message.text)
+  const [isImageOpen, setIsImageOpen] = useState(false)
+  const [isForwardOpen, setIsForwardOpen] = useState(false)
   const reactionEntries = getReactionEntries(message)
 
   const isImage = message.type === "image" && Boolean(message.imageUrl)
-  const canEdit = isSent && message.type === "text"
+  const canEdit = isSent && message.type === "text" && !message.deletedAt
+  const canDelete = isSent && !message.deletedAt
+  const isDeleted = Boolean(message.deletedAt)
+
+  const getConversationTitle = (conversationId: string) => {
+    const conversation = conversations.find((item) => item.id === conversationId)
+    if (!conversation) {
+      return `Conversation ${conversationId.slice(-4)}`
+    }
+    if (conversation.name) {
+      return conversation.name
+    }
+    const others = conversation.participants
+      .filter((id) => id !== currentUserId)
+      .map((id) => users.find((user) => user.id === id))
+      .filter((user): user is typeof users[number] => Boolean(user))
+    if (!others.length) {
+      return "Conversation"
+    }
+    if (others.length === 1) {
+      return others[0].name
+    }
+    return others.map((user) => user.name.split(" ")[0]).join(", ")
+  }
 
   const handleSave = () => {
     if (draft.trim() && draft.trim() !== message.text) {
@@ -104,13 +133,41 @@ export default function MessageBubble({
               isSent ? "bg-blue-500 text-white" : "bg-gray-200 text-black"
             } ${isHighlighted ? "ring-2 ring-amber-300" : ""}`}
           >
-            {isImage ? (
+            {message.replyTo ? (
+              <div className="mb-2 rounded-xl bg-white/20 px-3 py-2 text-xs">
+                <p className="font-semibold">Replying to</p>
+                <p className="truncate">
+                  {message.replyTo.deletedAt
+                    ? "Message deleted"
+                    : message.replyTo.text || (message.replyTo.imageUrl ? "Photo" : "")}
+                </p>
+              </div>
+            ) : null}
+            {message.forwardedFrom ? (
+              <div className="mb-2 rounded-xl bg-white/20 px-3 py-2 text-xs">
+                <p className="font-semibold">Forwarded</p>
+                <p className="truncate">
+                  {message.forwardedFrom.deletedAt
+                    ? "Message deleted"
+                    : message.forwardedFrom.text || (message.forwardedFrom.imageUrl ? "Photo" : "")}
+                </p>
+              </div>
+            ) : null}
+            {isDeleted ? (
+              <span className="italic text-white/80">Message deleted</span>
+            ) : isImage ? (
               <div className="space-y-2">
-                <img
-                  src={message.imageUrl}
-                  alt="Message attachment"
-                  className="max-h-64 w-full rounded-xl object-cover"
-                />
+                <button
+                  type="button"
+                  onClick={() => setIsImageOpen(true)}
+                  className="block w-full"
+                >
+                  <img
+                    src={message.imageUrl}
+                    alt="Message attachment"
+                    className="max-h-64 w-full rounded-xl object-cover"
+                  />
+                </button>
                 {message.text ? (
                   <div className="text-sm">{highlightText(message.text, highlightQuery)}</div>
                 ) : null}
@@ -135,6 +192,20 @@ export default function MessageBubble({
               {reaction}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => setReplyTarget(message)}
+            className="rounded-full px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground hover:bg-muted"
+          >
+            Reply
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsForwardOpen(true)}
+            className="rounded-full px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground hover:bg-muted"
+          >
+            Forward
+          </button>
           {canEdit ? (
             <button
               type="button"
@@ -158,6 +229,15 @@ export default function MessageBubble({
               </svg>
             </button>
           ) : null}
+          {canDelete ? (
+            <button
+              type="button"
+              onClick={() => deleteMessage(message.id)}
+              className="rounded-full px-1.5 py-0.5 text-[11px] font-semibold text-red-500 hover:bg-muted"
+            >
+              Delete
+            </button>
+          ) : null}
         </div>
       </div>
       {reactionEntries.length > 0 ? (
@@ -178,6 +258,62 @@ export default function MessageBubble({
         {message.edited ? " (edited)" : ""}
         {isSent ? ` - ${getStatusLabel(message.status)}` : ""}
       </span>
+      {isImage && isImageOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
+          <div className="relative max-h-[90vh] w-full max-w-3xl">
+            <button
+              type="button"
+              onClick={() => setIsImageOpen(false)}
+              className="absolute -top-10 right-0 rounded-full border border-white/30 bg-black/40 px-3 py-1 text-xs font-semibold text-white"
+            >
+              Close
+            </button>
+            <img
+              src={message.imageUrl}
+              alt="Message attachment"
+              className="max-h-[90vh] w-full rounded-2xl object-contain"
+            />
+          </div>
+        </div>
+      ) : null}
+      {isForwardOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-4 shadow-lg">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold">Forward to</h3>
+              <button
+                type="button"
+                onClick={() => setIsForwardOpen(false)}
+                className="rounded-full border border-border px-2 py-1 text-xs font-medium"
+              >
+                Close
+              </button>
+            </div>
+            <div className="mt-3 space-y-2">
+              {conversations.map((conversation) => (
+                <button
+                  key={conversation.id}
+                  type="button"
+                  onClick={() => {
+                    forwardMessage(message.id, conversation.id)
+                    setIsForwardOpen(false)
+                  }}
+                  className={`flex w-full items-center justify-between rounded-xl border border-border px-3 py-2 text-left ${
+                    conversation.id === activeConversationId ? "bg-muted/60" : "hover:bg-muted/50"
+                  }`}
+                >
+                  <span className="text-xs font-semibold">
+                    {getConversationTitle(conversation.id)}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {conversation.id === activeConversationId ? "Current" : "Send"}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

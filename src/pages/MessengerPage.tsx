@@ -4,34 +4,105 @@ import ConversationList from "@/components/conversation/ConversationList"
 import { useChatStore } from "@/store/chatStore"
 
 export default function MessengerPage() {
-  const { activeConversationId, conversations, receiveMessage } = useChatStore()
+  const {
+    activeConversationId,
+    initialize,
+    login,
+    register,
+    logout,
+    currentUserId,
+    isLoading,
+    authError
+  } = useChatStore()
   const [showChatOnMobile, setShowChatOnMobile] = useState(Boolean(activeConversationId))
+  const [authMode, setAuthMode] = useState<"login" | "register">("login")
+  const [formValues, setFormValues] = useState({
+    name: "",
+    email: "",
+    password: "",
+    avatar: ""
+  })
 
   useEffect(() => {
-    const cannedMessages = [
-      "Hey, are you free for a quick sync?",
-      "Just sent the latest mockups.",
-      "Can you check the release notes?",
-      "I added a few comments in the doc.",
-      "Let me know when you are online.",
-    ]
+    initialize()
+  }, [initialize])
 
-    const intervalId = window.setInterval(() => {
-      const inactiveConversations = conversations.filter(
-        (conversation) => conversation.id !== activeConversationId,
-      )
-      if (!inactiveConversations.length) {
-        return
-      }
+  if (!currentUserId) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-6 text-foreground">
+        <div className="w-full max-w-md rounded-3xl border border-border bg-card p-6 shadow-lg">
+          <div className="flex items-center justify-between">
+            <h1 className="text-lg font-semibold">Messenger</h1>
+            <button
+              type="button"
+            onClick={() => {
+              setAuthMode((mode) => (mode === "login" ? "register" : "login"))
+              setFormValues({ name: "", email: "", password: "", avatar: "" })
+            }}
+              className="text-xs font-medium text-primary"
+            >
+              {authMode === "login" ? "Create account" : "I have an account"}
+            </button>
+          </div>
 
-      const target = inactiveConversations[Math.floor(Math.random() * inactiveConversations.length)]
-      const senderId = target.participants.find((id) => id !== "user-1") ?? target.participants[0]
-      const text = cannedMessages[Math.floor(Math.random() * cannedMessages.length)]
-      receiveMessage(target.id, text, senderId)
-    }, 12000)
+          <div className="mt-5 space-y-3">
+            {authMode === "register" ? (
+              <input
+                value={formValues.name}
+                onChange={(event) => setFormValues((prev) => ({ ...prev, name: event.target.value }))}
+                placeholder="Name"
+                className="h-10 w-full rounded-full border border-border bg-background px-4 text-sm"
+              />
+            ) : null}
+            <input
+              value={formValues.email}
+              onChange={(event) => setFormValues((prev) => ({ ...prev, email: event.target.value }))}
+              placeholder="Email"
+              className="h-10 w-full rounded-full border border-border bg-background px-4 text-sm"
+            />
+            <input
+              value={formValues.password}
+              onChange={(event) => setFormValues((prev) => ({ ...prev, password: event.target.value }))}
+              placeholder="Password"
+              type="password"
+              className="h-10 w-full rounded-full border border-border bg-background px-4 text-sm"
+            />
+            {authMode === "register" ? (
+              <input
+                value={formValues.avatar}
+                onChange={(event) => setFormValues((prev) => ({ ...prev, avatar: event.target.value }))}
+                placeholder="Avatar URL (optional)"
+                className="h-10 w-full rounded-full border border-border bg-background px-4 text-sm"
+              />
+            ) : null}
+          </div>
 
-    return () => window.clearInterval(intervalId)
-  }, [activeConversationId, conversations, receiveMessage])
+          {authError ? <p className="mt-3 text-xs text-red-500">{authError}</p> : null}
+
+          <button
+            type="button"
+            disabled={isLoading}
+            onClick={async () => {
+              if (authMode === "login") {
+                await login(formValues.email, formValues.password)
+              } else {
+                await register({
+                  name: formValues.name,
+                  email: formValues.email,
+                  password: formValues.password,
+                  avatar: formValues.avatar || undefined
+                })
+              }
+              setFormValues({ name: "", email: "", password: "", avatar: "" })
+            }}
+            className="mt-4 w-full rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+          >
+            {isLoading ? "Please wait..." : authMode === "login" ? "Login" : "Register"}
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="h-screen overflow-hidden bg-background text-foreground">
@@ -52,6 +123,13 @@ export default function MessengerPage() {
           <ChatWindow onBack={() => setShowChatOnMobile(false)} />
         </main>
       </div>
+      <button
+        type="button"
+        onClick={logout}
+        className="fixed bottom-4 left-4 hidden rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold md:block"
+      >
+        Logout
+      </button>
     </div>
   )
 }

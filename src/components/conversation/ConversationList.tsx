@@ -6,8 +6,6 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { useChatStore } from "@/store/chatStore"
 import type { Conversation, User } from "@/types/chat"
 
-const currentUserId = "user-1"
-
 const getInitials = (value: string) =>
   value
     .split(" ")
@@ -16,7 +14,7 @@ const getInitials = (value: string) =>
     .slice(0, 2)
     .toUpperCase()
 
-const getConversationTitle = (conversation: Conversation, users: User[]) => {
+const getConversationTitle = (conversation: Conversation, users: User[], currentUserId: string) => {
   if (conversation.name) {
     return conversation.name
   }
@@ -37,7 +35,10 @@ const getConversationTitle = (conversation: Conversation, users: User[]) => {
   return others.map((user) => user.name.split(" ")[0]).join(", ")
 }
 
-const getConversationAvatar = (conversation: Conversation, users: User[]) => {
+const getConversationAvatar = (conversation: Conversation, users: User[], currentUserId: string) => {
+  if (conversation.avatar) {
+    return conversation.avatar
+  }
   if (conversation.name) {
     return getInitials(conversation.name)
   }
@@ -71,6 +72,7 @@ export default function ConversationList({ onSelect }: ConversationListProps) {
     setActiveConversation,
     startConversation,
     startGroupConversation,
+    currentUserId
   } = useChatStore()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false)
@@ -159,9 +161,12 @@ export default function ConversationList({ onSelect }: ConversationListProps) {
         <div className="space-y-2">
           {conversations.map((conversation) => {
             const lastMessage = conversation.messages[conversation.messages.length - 1]
+            const preview = lastMessage?.deletedAt
+              ? "Message deleted"
+              : lastMessage?.text || (lastMessage?.imageUrl ? "Photo" : "No messages yet")
             const isActive = conversation.id === activeConversationId
-            const title = getConversationTitle(conversation, users)
-            const avatar = getConversationAvatar(conversation, users)
+            const title = getConversationTitle(conversation, users, currentUserId)
+            const avatar = getConversationAvatar(conversation, users, currentUserId)
 
             return (
               <button
@@ -179,7 +184,11 @@ export default function ConversationList({ onSelect }: ConversationListProps) {
               >
                 <div className="relative">
                   <Avatar className="h-11 w-11">
-                    <AvatarFallback>{avatar}</AvatarFallback>
+                    {avatar.startsWith("http") ? (
+                      <img src={avatar} alt="" className="h-full w-full rounded-full object-cover" />
+                    ) : (
+                      <AvatarFallback>{avatar}</AvatarFallback>
+                    )}
                   </Avatar>
                   <span
                     className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card ${
@@ -199,9 +208,7 @@ export default function ConversationList({ onSelect }: ConversationListProps) {
                       {formatTime(lastMessage?.timestamp)}
                     </span>
                   </div>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {lastMessage?.text ?? "No messages yet"}
-                  </p>
+                  <p className="truncate text-xs text-muted-foreground">{preview}</p>
                 </div>
                 {conversation.unreadCount > 0 ? (
                   <Badge>{conversation.unreadCount}</Badge>

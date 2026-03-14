@@ -5,9 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { useChatStore } from "@/store/chatStore"
 import type { Conversation, User } from "@/types/chat"
 
-const currentUserId = "user-1"
-
-const getConversationTitle = (conversation: Conversation, users: User[]) => {
+const getConversationTitle = (conversation: Conversation, users: User[], currentUserId: string) => {
   if (conversation.name) {
     return conversation.name
   }
@@ -28,7 +26,10 @@ const getConversationTitle = (conversation: Conversation, users: User[]) => {
   return others.map((user) => user.name.split(" ")[0]).join(", ")
 }
 
-const getConversationAvatar = (conversation: Conversation, users: User[]) => {
+const getConversationAvatar = (conversation: Conversation, users: User[], currentUserId: string) => {
+  if (conversation.avatar) {
+    return conversation.avatar
+  }
   if (conversation.name) {
     return conversation.name
       .split(" ")
@@ -43,7 +44,7 @@ const getConversationAvatar = (conversation: Conversation, users: User[]) => {
   return user?.avatar ?? "?"
 }
 
-const getOnlineStatus = (conversation: Conversation, users: User[]) => {
+const getOnlineStatus = (conversation: Conversation, users: User[], currentUserId: string) => {
   const other = conversation.participants.find((id) => id !== currentUserId)
   const user = users.find((item) => item.id === other)
   return user?.online ?? false
@@ -65,9 +66,19 @@ export default function ChatHeader({
   onSearchChange,
 }: ChatHeaderProps) {
   const { resolvedTheme, theme, setTheme } = useTheme()
-  const { conversations, users, activeConversationId, mutedConversationIds, toggleMuteConversation } =
-    useChatStore()
+  const {
+    conversations,
+    users,
+    activeConversationId,
+    mutedConversationIds,
+    toggleMuteConversation,
+    currentUserId,
+    logout,
+    setActiveConversation,
+    initialize
+  } = useChatStore()
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const activeConversation = conversations.find(
     (conversation) => conversation.id === activeConversationId,
   )
@@ -133,9 +144,9 @@ export default function ChatHeader({
     )
   }
 
-  const title = getConversationTitle(activeConversation, users)
-  const avatar = getConversationAvatar(activeConversation, users)
-  const online = getOnlineStatus(activeConversation, users)
+  const title = getConversationTitle(activeConversation, users, currentUserId)
+  const avatar = getConversationAvatar(activeConversation, users, currentUserId)
+  const online = getOnlineStatus(activeConversation, users, currentUserId)
   const isMuted = Boolean(mutedConversationIds[activeConversation.id])
   const participants = activeConversation.participants
     .filter((id) => id !== currentUserId)
@@ -144,7 +155,8 @@ export default function ChatHeader({
 
   return (
     <header className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between gap-3 sm:justify-start">
+        <div className="flex items-center gap-3">
         {onBack ? (
           <button
             type="button"
@@ -156,7 +168,11 @@ export default function ChatHeader({
         ) : null}
         <div className="relative">
           <Avatar className="h-10 w-10">
-            <AvatarFallback>{avatar}</AvatarFallback>
+            {avatar.startsWith("http") ? (
+              <img src={avatar} alt="" className="h-full w-full rounded-full object-cover" />
+            ) : (
+              <AvatarFallback>{avatar}</AvatarFallback>
+            )}
           </Avatar>
           <span
             className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card ${
@@ -177,63 +193,33 @@ export default function ChatHeader({
             {isMuted ? <span className="text-[11px]">Muted</span> : null}
           </div>
         </div>
-      </div>
-      <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+        </div>
         <button
           type="button"
-          onClick={handleToggleTheme}
-          className="flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs font-medium"
-          aria-label="Toggle dark mode"
+          onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+          className="rounded-full border border-border px-3 py-1 text-xs font-medium sm:hidden"
+          aria-label="Toggle menu"
         >
-          {isDark ? (
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="5" />
-              <line x1="12" y1="1" x2="12" y2="3" />
-              <line x1="12" y1="21" x2="12" y2="23" />
-              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-              <line x1="1" y1="12" x2="3" y2="12" />
-              <line x1="21" y1="12" x2="23" y2="12" />
-              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-            </svg>
-          ) : (
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z" />
-            </svg>
-          )}
-          <span className="hidden sm:inline">{isDark ? "Light" : "Dark"}</span>
+          Menu
         </button>
+      </div>
+      <div
+        className={`grid w-full grid-cols-2 items-center gap-2 sm:flex sm:w-auto sm:justify-end ${
+          isMobileMenuOpen ? "block" : "hidden sm:flex"
+        }`}
+      >
         {isSearchOpen ? (
           <input
             value={searchValue}
             onChange={(event) => onSearchChange?.(event.target.value)}
             placeholder="Search messages"
-            className="h-9 w-48 rounded-full border border-border bg-background px-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring sm:w-56"
+            className="h-9 w-full rounded-full border border-border bg-background px-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring sm:w-56"
           />
         ) : null}
         <button
           type="button"
           onClick={onSearchToggle}
-          className="flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs font-medium"
+          className="flex w-full items-center justify-center gap-2 rounded-full border border-border px-3 py-1 text-xs font-medium sm:w-auto"
         >
           <svg
             aria-hidden="true"
@@ -251,7 +237,7 @@ export default function ChatHeader({
         <button
           type="button"
           onClick={() => setIsProfileOpen(true)}
-          className="rounded-full border border-border px-3 py-1 text-xs font-medium"
+          className="w-full rounded-full border border-border px-3 py-1 text-xs font-medium sm:w-auto"
         >
           <span className="hidden sm:inline">View Profile</span>
           <span className="sm:hidden">Profile</span>
@@ -259,10 +245,17 @@ export default function ChatHeader({
         <button
           type="button"
           onClick={() => toggleMuteConversation(activeConversation.id)}
-          className="rounded-full border border-border px-3 py-1 text-xs font-medium"
+          className="w-full rounded-full border border-border px-3 py-1 text-xs font-medium sm:w-auto"
         >
           <span className="hidden sm:inline">{isMuted ? "Unmute" : "Mute"}</span>
           <span className="sm:hidden">{isMuted ? "On" : "Mute"}</span>
+        </button>
+        <button
+          type="button"
+          onClick={logout}
+          className="w-full rounded-full border border-border px-3 py-1 text-xs font-semibold text-foreground sm:hidden"
+        >
+          Logout
         </button>
       </div>
       {isProfileOpen ? (
@@ -279,6 +272,49 @@ export default function ChatHeader({
               </button>
             </div>
             <div className="mt-4 space-y-3">
+              {activeConversation.isGroup ? (
+                <div className="space-y-2 rounded-xl border border-border p-3">
+                  <p className="text-xs font-semibold text-muted-foreground">Group settings</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const url = window.prompt("Enter group avatar URL")
+                      if (!url) {
+                        return
+                      }
+                      fetch(`${import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5000/api"}/conversations/${activeConversation.id}/avatar`, {
+                        method: "PATCH",
+                        headers: {
+                          "Content-Type": "application/json",
+                          Authorization: `Bearer ${localStorage.getItem("auth_token") ?? ""}`
+                        },
+                        body: JSON.stringify({ avatar: url })
+                      })
+                        .then(() => initialize())
+                        .catch(() => null)
+                    }}
+                    className="w-full rounded-full border border-border px-3 py-2 text-xs font-semibold"
+                  >
+                    Set Group Avatar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      fetch(`${import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5000/api"}/conversations/${activeConversation.id}/leave`, {
+                        method: "POST",
+                        headers: {
+                          Authorization: `Bearer ${localStorage.getItem("auth_token") ?? ""}`
+                        }
+                      })
+                        .then(() => initialize())
+                        .catch(() => null)
+                    }}
+                    className="w-full rounded-full border border-border px-3 py-2 text-xs font-semibold text-red-600"
+                  >
+                    Leave Group
+                  </button>
+                </div>
+              ) : null}
               {participants.length ? (
                 participants.map((user) => (
                   <div key={user.id} className="flex items-center gap-3 rounded-xl border border-border p-3">
