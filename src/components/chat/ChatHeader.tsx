@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useTheme } from "next-themes"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { API_BASE_URL, authStorage } from "@/lib/api"
 import { useChatStore } from "@/store/chatStore"
 import type { Conversation, User } from "@/types/chat"
 
@@ -282,11 +283,11 @@ export default function ChatHeader({
                       if (!url) {
                         return
                       }
-                      fetch(`${import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5000/api"}/conversations/${activeConversation.id}/avatar`, {
+                      fetch(`${API_BASE_URL}/conversations/${activeConversation.id}/avatar`, {
                         method: "PATCH",
                         headers: {
                           "Content-Type": "application/json",
-                          Authorization: `Bearer ${localStorage.getItem("auth_token") ?? ""}`
+                          Authorization: `Bearer ${authStorage.getToken() ?? ""}`
                         },
                         body: JSON.stringify({ avatar: url })
                       })
@@ -300,10 +301,10 @@ export default function ChatHeader({
                   <button
                     type="button"
                     onClick={() => {
-                      fetch(`${import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5000/api"}/conversations/${activeConversation.id}/leave`, {
+                      fetch(`${API_BASE_URL}/conversations/${activeConversation.id}/leave`, {
                         method: "POST",
                         headers: {
-                          Authorization: `Bearer ${localStorage.getItem("auth_token") ?? ""}`
+                          Authorization: `Bearer ${authStorage.getToken() ?? ""}`
                         }
                       })
                         .then(() => initialize())
