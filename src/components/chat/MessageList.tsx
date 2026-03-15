@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef } from "react"
 import MessageBubble from "@/components/chat/MessageBubble"
 import { useChatStore } from "@/store/chatStore"
 

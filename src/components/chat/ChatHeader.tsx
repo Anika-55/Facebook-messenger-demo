@@ -75,7 +75,6 @@ export default function ChatHeader({
     toggleMuteConversation,
     currentUserId,
     logout,
-    setActiveConversation,
     initialize
   } = useChatStore()
   const [isProfileOpen, setIsProfileOpen] = useState(false)
